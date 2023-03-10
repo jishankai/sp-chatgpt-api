@@ -21,7 +21,7 @@ services:
     depends_on:
       - mongo-sp
     ports:
-      - "5002:5000"
+      - "5000:5000"
 
   mongo_express-sp:
     container_name: mongo-express-sp
