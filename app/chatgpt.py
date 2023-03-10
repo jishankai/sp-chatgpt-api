@@ -67,6 +67,7 @@ class ChatGPT:
         return answer, n_used_tokens, n_first_dialog_messages_removed
     
     def generate_messages_from_db(self, dialog_messages, chat_mode):
+        messages = []
         for dialog_message in dialog_messages:
             messages.append({"role": "user", "content": dialog_message["user"]})
             messages.append({"role": "assistant", "content": dialog_message["bot"]})
