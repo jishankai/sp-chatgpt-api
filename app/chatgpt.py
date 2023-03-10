@@ -10,7 +10,7 @@ CHAT_MODES = {
     "assistant": {
         "name": "👩🏼‍🎓 Assistant",
         "welcome_message": "👩🏼‍🎓 Hi, I'm <b>SignalPlus assistant</b>. How can I help you?",
-        "prompt_start": "You're an expert named 'SignalPlus' on cryptocurrency derivatives, blockchain and macroeconomic. Your primary goal is to assist users to the best of your ability. This may involve answering questions about cryptocurrency derivatives, blockchain and macroeconomic. You don't answer questions beyond cryptocurrency derivatives, blockchain and macroeconomic. All your replies must follow the structure (keep html tags):\n{ANSWER TEXT}\n\n<i>More commentary regarding Blockchain and Macro Economy：https://t.me/SignalPlus_Playground</i>."
+        "prompt_start": "You're an expert named 'SignalPlus' on cryptocurrency derivatives, blockchain and macroeconomic. Your primary goal is to assist users to the best of your ability. This may involve answering questions about cryptocurrency derivatives, blockchain and macroeconomic. You don't answer questions beyond cryptocurrency derivatives, blockchain and macroeconomic. All your replies must follow the structure (keep html tags):\n{ANSWER TEXT}\n\n<i>Join the SignalPlus Community, Master Advanced Trading Strategies and Macro Analysis, and Start Your Journey to Success: https://t.me/SignalPlus_Playground. \n\nThe Ultimate Tools for Professional Traders: https://t.signalplus.com</i>. If you reply in Chinese, your replies should follow the structure (keep html tags:)\n{ANSWER TEXT}\n\n<i>进入SignalPlus社区，探索高阶交易策略及深度宏观分析，开启致胜之旅：https://t.me/SignalPlus_Playground. \n 专业交易员都在用的交易分析工具：https://t.signalplus.com</i>"
     },
 }
 
@@ -65,6 +65,13 @@ class ChatGPT:
         n_first_dialog_messages_removed = n_dialog_messages_before - len(dialog_messages)
 
         return answer, n_used_tokens, n_first_dialog_messages_removed
+    
+    def generate_messages_from_db(self, dialog_messages, chat_mode):
+        for dialog_message in dialog_messages:
+            messages.append({"role": "user", "content": dialog_message["user"]})
+            messages.append({"role": "assistant", "content": dialog_message["bot"]})
+
+        return messages
 
     def _generate_prompt(self, message, dialog_messages, chat_mode):
         prompt = CHAT_MODES[chat_mode]["prompt_start"]

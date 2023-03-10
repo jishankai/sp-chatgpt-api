@@ -10,7 +10,7 @@ import config
 class Database:
     def __init__(self):
         self.client = pymongo.MongoClient(config.mongodb_uri)
-        self.db = self.client["chatgpt_telegram_bot"]
+        self.db = self.client["sp_chatgpt_api"]
 
         self.user_collection = self.db["user"]
         self.dialog_collection = self.db["dialog"]
@@ -27,18 +27,9 @@ class Database:
     def add_new_user(
         self,
         user_id: int,
-        chat_id: int,
-        username: str = "",
-        first_name: str = "",
-        last_name: str = "",
     ):
         user_dict = {
             "_id": user_id,
-            "chat_id": chat_id,
-
-            "username": username,
-            "first_name": first_name,
-            "last_name": last_name,
 
             "last_interaction": datetime.now(),
             "first_seen": datetime.now(),
