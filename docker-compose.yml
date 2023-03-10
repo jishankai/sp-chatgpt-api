@@ -4,9 +4,10 @@ services:
   mongo-sp:
     container_name: mongo-sp
     image: mongo:latest
+    command: mongod --port 27018
     restart: always
     ports:
-      - ${MONGODB_PORT:-27018}:${MONGODB_PORT:-27017}
+      - ${MONGODB_PORT:-27018}:${MONGODB_PORT:-27018}
     volumes:
       - ${MONGODB_PATH:-./mongodb}:/data/db
     # TODO: add auth
@@ -28,10 +29,10 @@ services:
     image: mongo-express:latest
     restart: always
     ports:
-      - ${MONGO_EXPRESS_PORT:-8082}:${MONGO_EXPRESS_PORT:-8081}
+      - ${MONGO_EXPRESS_PORT:-8082}:${MONGO_EXPRESS_PORT:-8082}
     environment:
       - ME_CONFIG_MONGODB_SERVER=mongo-sp
-      - ME_CONFIG_MONGODB_PORT=${MONGODB_PORT:-27017}
+      - ME_CONFIG_MONGODB_PORT=${MONGODB_PORT:-27018}
       - ME_CONFIG_MONGODB_ENABLE_ADMIN=false
       - ME_CONFIG_MONGODB_AUTH_DATABASE=sp_chatgpt_api
       - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USERNAME:-username}
