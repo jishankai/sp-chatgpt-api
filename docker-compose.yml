@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  mongo:
+  mongo-sp:
     container_name: mongo-sp
     image: mongo:latest
     restart: always
@@ -19,11 +19,11 @@ services:
       context: "."
       dockerfile: Dockerfile
     depends_on:
-      - mongo
+      - mongo-sp
     ports:
       - "5002:5000"
 
-  mongo_express:
+  mongo_express-sp:
     container_name: mongo-express-sp
     image: mongo-express:latest
     restart: always
@@ -37,7 +37,7 @@ services:
       - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USERNAME:-username}
       - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASSWORD:-password}
     depends_on:
-      - mongo
+      - mongo-sp
 
   nginx:
     image: nginx:latest
