@@ -16,7 +16,15 @@ logger = logging.getLogger(__name__)
 
 # api server
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+ALLOWED_ORIGINS = [
+    'https://feat-chat.front.signalplus.net',
+    'https://t.signalplus.com/',
+    'http://localhost:8000'
+]
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
 
 
 @app.route('/api/messages', methods=['GET'])
