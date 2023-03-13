@@ -10,19 +10,18 @@ services:
       - ${MONGODB_PORT:-27018}:${MONGODB_PORT:-27018}
     volumes:
       - ${MONGODB_PATH:-./mongodb}:/data/db
-    # TODO: add auth
 
   sp_chatgpt_api:
     container_name: sp_chatgpt_api
-    command: python3 app/app.py
+    command: gunicorn --workers=4 --bind 0.0.0.0:8000 app.app:app
     restart: always
     build:
       context: "."
       dockerfile: Dockerfile
     depends_on:
       - mongo-sp
-    ports:
-      - "5002:5000"
+    expose:
+      - 8000
 
   mongo_express-sp:
     container_name: mongo-express-sp

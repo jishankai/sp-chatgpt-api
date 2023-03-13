@@ -1,10 +1,12 @@
 import os
+import sys
 import logging
 import traceback
 import html
 import json
 from datetime import datetime
 
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import config
 import database
 import chatgpt
