@@ -29,7 +29,7 @@ async def get_messages():
         chat_mode=db.get_user_attribute(user_id, "current_chat_mode"),
     )
      
-    return jsonify(messages)
+    return jsonify(succ=True, code=0, message="", value=messages)
 
 @app.route('/api/message', methods=['POST'])
 async def post_message():
@@ -62,7 +62,7 @@ async def post_message():
         logger.error(error_text)
         return
 
-    return jsonify({"answer": answer})
+    return jsonify(succ=True, code=0, message="", value=answer)
 
 async def register_user_if_not_exists(user_id):
     if not db.check_if_user_exists(user_id):
