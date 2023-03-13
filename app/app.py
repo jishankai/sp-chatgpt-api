@@ -33,8 +33,9 @@ async def get_messages():
 
 @app.route('/api/message', methods=['POST'])
 async def post_message():
-    user_id = request.json.get('user_id')
-    message = request.json.get('message')
+    request_data = request.get_json()
+    user_id = request_data.get('user_id')
+    message = request_data.get('message')
     await register_user_if_not_exists(user_id)
     if (datetime.now() - db.get_user_attribute(user_id, "last_interaction")).seconds > config.new_dialog_timeout and len(db.get_dialog_messages(user_id)) > 0:
         db.start_new_dialog(user_id)
