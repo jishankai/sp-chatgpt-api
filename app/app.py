@@ -41,7 +41,7 @@ def handle_lark_request():
     # 校验 verification token 是否匹配，token 不匹配说明该回调并非来自开发平台
     token = obj.get("token", "")
     if token != config.lark_app_verification_token:
-        logger.error("verification token not match, token =", token)
+        logger.error(f"verification token not match, token = {token}")
         return jsonify({}), 200
 
     # 根据 type 处理不同类型事件
@@ -80,7 +80,6 @@ def generate_chatgpt_response(user_id, message):
         answer, n_used_tokens, n_first_dialog_messages_removed = chatgpt_instance.send_message(
             message,
             dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
-            chat_mode=db.get_user_attribute(user_id, "current_chat_mode"),
         )
         
         # update user data
@@ -110,8 +109,8 @@ def send_message(event, text):
 
     if "@ChatGPT" in event["text"]:
         # This message is an @ message
-        message_id = event.get("message_id")
-        chat_id = event.get("chat_id")
+        chat_id = event.get("open_chat_id")
+        message_id = event.get("open_message_id")
         sender_id = event.get("open_id")
         req_body = {
             "chat_id": chat_id,
