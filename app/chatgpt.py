@@ -35,7 +35,7 @@ class ChatGPT:
         if chat_mode == "signalplus":
             openai.api_key = config.openai_lark_api_key
     
-    def send_message(self, message, dialog_messages=[]):
+    async def send_message(self, message, dialog_messages=[]):
         if self.chat_mode not in CHAT_MODES.keys():
             raise ValueError(f"Chat mode {self.chat_mode} is not supported")
 

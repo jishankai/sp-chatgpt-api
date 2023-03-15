@@ -30,11 +30,11 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
 
 @app.route('/', methods=['GET'])
-def get():
+async def get():
     return jsonify({}), 200
 
 @app.route('/lark', methods=['POST'])
-def handle_lark_request():
+async def handle_lark_request():
     # 解析请求 body
     obj = request.json
 
@@ -52,10 +52,10 @@ def handle_lark_request():
         # 获取事件内容和类型，并进行相应处理，此处只关注给机器人推送的消息事件
         event = obj.get("event")
         if event.get("type", "") == "message":
-            handle_message(event)
+            await handle_message(event)
     return jsonify({}), 200
 
-def handle_message(event):
+async def handle_message(event):
     # 此处只处理 text 类型消息，其他类型消息忽略
     msg_type = event.get("msg_type", "")
     if msg_type != "text":
@@ -65,19 +65,19 @@ def handle_message(event):
     # 调用 OpenAI API 生成回复
     prompt = event.get("text", "")
     open_id = event.get("open_id")
-    response = generate_chatgpt_response(open_id, prompt)
+    response = await generate_chatgpt_response(open_id, prompt)
 
     # 调用发消息 API 发送回复消息
-    send_message(event, response)
+    await send_message(event, response)
 
-def generate_chatgpt_response(user_id, message):
-    register_user_if_not_exists(user_id)
+async def generate_chatgpt_response(user_id, message):
+    await register_user_if_not_exists(user_id)
     if (datetime.now() - db.get_user_attribute(user_id, "last_interaction")).seconds > config.new_dialog_timeout and len(db.get_dialog_messages(user_id)) > 0:
         db.start_new_dialog(user_id)
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
     try:
         chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api, chat_mode="signalplus")
-        answer, n_used_tokens, n_first_dialog_messages_removed = chatgpt_instance.send_message(
+        answer, n_used_tokens, n_first_dialog_messages_removed = await chatgpt_instance.send_message(
             message,
             dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
         )
@@ -99,12 +99,13 @@ def generate_chatgpt_response(user_id, message):
         logger.error(error_text)
         return
 
-def send_message(event, text):
+async def send_message(event, text):
     url = "https://open.feishu.cn/open-apis/message/v4/send/"
 
+    token = await get_tenant_access_token()
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + get_tenant_access_token()
+        "Authorization": "Bearer " + token
     }
 
     if "@ChatGPT" in event["text"]:
@@ -131,11 +132,11 @@ def send_message(event, text):
             }
         }
 
-    response = requests.post(url, headers=headers, json=req_body)
+    response = await requests.post(url, headers=headers, json=req_body)
     if response.status_code != 200:
         logger.error("send message error, status_code = ", response.status_code)
 
-def get_tenant_access_token():
+async def get_tenant_access_token():
     url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/"
     headers = {
         "Content-Type" : "application/json"
@@ -146,7 +147,7 @@ def get_tenant_access_token():
     }
 
     try:
-        response = requests.post(url, headers=headers, json=req_body)
+        response = await requests.post(url, headers=headers, json=req_body)
     except Exception as e:
         logger.error(e)
         return
@@ -160,26 +161,26 @@ def get_tenant_access_token():
 
 
 @app.route('/api/messages', methods=['GET'])
-def get_messages():
+async def get_messages():
     user_id = request.args.get('user_id')
     register_user_if_not_exists(user_id)
     chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api)
-    messages = chatgpt_instance.generate_messages_from_db(
+    messages = await chatgpt_instance.generate_messages_from_db(
         dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
     )
      
     return jsonify(succ=True, code=0, message="", value=messages)
 
 @app.route('/api/message', methods=['POST'])
-def post_message():
+async def post_message():
     request_data = request.json
     user_id = request_data.get('user_id')
     message = request_data.get('message')
-    answer = generate_chatgpt_response(user_id, message)
+    answer = await generate_chatgpt_response(user_id, message)
 
     return jsonify(succ=True, code=0, message="", value=answer)
 
-def register_user_if_not_exists(user_id):
+async def register_user_if_not_exists(user_id):
     if not db.check_if_user_exists(user_id):
         db.add_new_user(
             user_id,
