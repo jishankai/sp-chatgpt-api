@@ -28,6 +28,10 @@ ALLOWED_ORIGINS = [
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
 
+@app.route('/', methods=['GET'])
+def get():
+    return 200
+
 @app.route('/lark', methods=['POST'])
 def handle_lark_request():
     # 解析请求 body
@@ -35,7 +39,7 @@ def handle_lark_request():
 
     # 校验 verification token 是否匹配，token 不匹配说明该回调并非来自开发平台
     token = obj.get("token", "")
-    if token != config.lark_verification_token:
+    if token != config.lark_app_verification_token:
         logger.error("verification token not match, token =", token)
         return jsonify({}), 200
 
