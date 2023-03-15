@@ -132,7 +132,7 @@ async def send_message(event, text):
             }
         }
 
-    response = await requests.post(url, headers=headers, json=req_body)
+    response = requests.post(url, headers=headers, json=req_body)
     if response.status_code != 200:
         logger.error("send message error, status_code = ", response.status_code)
 
@@ -147,7 +147,7 @@ async def get_tenant_access_token():
     }
 
     try:
-        response = await requests.post(url, headers=headers, json=req_body)
+        response = requests.post(url, headers=headers, json=req_body)
     except Exception as e:
         logger.error(e)
         return
