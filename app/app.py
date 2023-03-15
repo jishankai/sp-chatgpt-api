@@ -163,9 +163,9 @@ async def get_tenant_access_token():
 @app.route('/api/messages', methods=['GET'])
 async def get_messages():
     user_id = request.args.get('user_id')
-    register_user_if_not_exists(user_id)
+    await register_user_if_not_exists(user_id)
     chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api)
-    messages = await chatgpt_instance.generate_messages_from_db(
+    messages = chatgpt_instance.generate_messages_from_db(
         dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
     )
      
