@@ -5,6 +5,7 @@ import traceback
 import html
 import json
 from datetime import datetime
+import requests
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import config
@@ -30,7 +31,7 @@ CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
 
 @app.route('/', methods=['GET'])
 def get():
-    return 200
+    return jsonify({}), 200
 
 @app.route('/lark', methods=['POST'])
 def handle_lark_request():
@@ -67,15 +68,15 @@ def handle_message(event):
     response = generate_chatgpt_response(open_id, prompt)
 
     # 调用发消息 API 发送回复消息
-    send_message(open_id, response)
+    send_message(event, response)
 
-def generate_chatgpt_response(user_id, prompt):
+def generate_chatgpt_response(user_id, message):
     register_user_if_not_exists(user_id)
     if (datetime.now() - db.get_user_attribute(user_id, "last_interaction")).seconds > config.new_dialog_timeout and len(db.get_dialog_messages(user_id)) > 0:
         db.start_new_dialog(user_id)
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
     try:
-        chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api)
+        chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api, chat_mode="signalplus")
         answer, n_used_tokens, n_first_dialog_messages_removed = chatgpt_instance.send_message(
             message,
             dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
@@ -99,20 +100,37 @@ def generate_chatgpt_response(user_id, prompt):
         logger.error(error_text)
         return
 
-def send_message(open_id, text):
+def send_message(event, text):
     url = "https://open.feishu.cn/open-apis/message/v4/send/"
 
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + get_tenant_access_token()
     }
-    req_body = {
-        "open_id": open_id,
-        "msg_type": "text",
-        "content": {
-            "text": text
+
+    if "@ChatGPT" in event["text"]:
+        # This message is an @ message
+        message_id = event.get("message_id")
+        chat_id = event.get("chat_id")
+        sender_id = event.get("open_id")
+        req_body = {
+            "chat_id": chat_id,
+            "msg_type": "text",
+            "content": {
+                "text": text
+            },
+            "root_id": message_id,
+            "user_id": sender_id
         }
-    }
+    else:
+        open_id = event.get("open_id")
+        req_body = {
+            "open_id": open_id,
+            "msg_type": "text",
+            "content": {
+                "text": text
+            }
+        }
 
     response = requests.post(url, headers=headers, json=req_body)
     if response.status_code != 200:
@@ -149,7 +167,6 @@ def get_messages():
     chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api)
     messages = chatgpt_instance.generate_messages_from_db(
         dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
-        chat_mode=db.get_user_attribute(user_id, "current_chat_mode"),
     )
      
     return jsonify(succ=True, code=0, message="", value=messages)
