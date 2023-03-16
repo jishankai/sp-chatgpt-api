@@ -41,17 +41,14 @@ async def handle_lark_request():
 
     schema = obj.get("schema", "")
     if schema == "2.0":
-        token = obj["header"]["token"]
-        if token != config.lark_app_verification_token:
-            logger.error(f"verification token not match, token = {token}")
-            return jsonify({}), 200
-
-        # 根据 type 处理不同类型事件
-        type = obj["header"]["event_type"]
-        if "im.message.receive_v1" == type:  # 事件回调
-            # 获取事件内容和类型，并进行相应处理，此处只关注给机器人推送的消息事件
-            event = obj.get("event")
-            await handle_message(event)
+        event_id = obj["header"]["event_id"]
+        if not db.check_if_lark_event_exists(event_id):
+            # 根据 type 处理不同类型事件
+            type = obj["header"]["event_type"]
+            if "im.message.receive_v1" == type:  # 事件回调
+                # 获取事件内容和类型，并进行相应处理，此处只关注给机器人推送的消息事件
+                event = obj.get("event")
+                await handle_message(event)
         return jsonify({}), 200
 
     else:
@@ -59,18 +56,19 @@ async def handle_lark_request():
         token = obj.get("token", "")
         if token != config.lark_app_verification_token:
             logger.error(f"verification token not match, token = {token}")
-            return jsonify({}), 200
+        return jsonify({}), 200
 
 async def handle_message(event):
     # 此处只处理 text 类型消息，其他类型消息忽略
-    msg_type = event["message"]["msg_type"]
+    msg_type = event["message"]["message_type"]
     if msg_type != "text":
         logger.error("unknown msg_type =", msg_type)
         return
 
     # 调用 OpenAI API 生成回复
-    prompt = event["message"]["content"]["text"]
     open_id = event["sender"]["sender_id"]["open_id"]
+    content = json.loads(event["message"]["content"])
+    prompt = content["text"]
     response = await generate_chatgpt_response(open_id, prompt)
 
     # 调用发消息 API 发送回复消息
@@ -114,7 +112,9 @@ async def send_message(event, text):
         "Authorization": "Bearer " + token
     }
 
-    if "@" in event["message"]["content"]["text"] and event["message"]["mentions"][0]["name"]=="ChatGPT":
+    content = json.loads(event["message"]["content"])
+    message = content["text"]
+    if "@" in message and event["message"]["mentions"][0]["name"]=="ChatGPT":
         # This message is an @ message
         chat_id = event["message"]["chat_id"]
         message_id = event["message"]["message_id"]

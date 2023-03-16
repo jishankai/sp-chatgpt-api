@@ -14,6 +14,21 @@ class Database:
 
         self.user_collection = self.db["user"]
         self.dialog_collection = self.db["dialog"]
+        # lark event
+        self.lark_event_collection = self.db["lark_event"]
+
+    def check_if_lark_event_exists(self, event_id: int):
+        if self.lark_event_collection.count_documents({"_id": event_id}) > 0:
+            return True
+        else:
+            return False
+
+    def add_new_event(
+        self,
+        event_id: int,
+    ):
+        if not self.check_if_lark_event_exists(event_id):
+            self.lark_event_collection.insert_one({"_id": event_id})
 
     def check_if_user_exists(self, user_id: int, raise_exception: bool = False):
         if self.user_collection.count_documents({"_id": user_id}) > 0:
@@ -23,7 +38,7 @@ class Database:
                 raise ValueError(f"User {user_id} does not exist")
             else:
                 return False
-        
+
     def add_new_user(
         self,
         user_id: int,
@@ -33,10 +48,8 @@ class Database:
 
             "last_interaction": datetime.now(),
             "first_seen": datetime.now(),
-            
             "current_dialog_id": None,
             "current_chat_mode": "assistant",
-
             "n_used_tokens": 0
         }
 
