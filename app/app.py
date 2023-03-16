@@ -72,6 +72,10 @@ async def handle_message(event):
     open_id = event["sender"]["sender_id"]["open_id"]
     content = json.loads(event["message"]["content"])
     prompt = content["text"]
+    if "@" in prompt:
+        at_key = event["message"]["mentions"][0]["key"]
+        prompt = prompt.replace(at_key, "")
+
     response = await generate_chatgpt_response(open_id, prompt)
 
     # 调用发消息 API 发送回复消息
