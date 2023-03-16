@@ -43,6 +43,9 @@ async def handle_lark_request():
     if schema == "2.0":
         event_id = obj["header"]["event_id"]
         if not db.check_if_lark_event_exists(event_id):
+            db.add_new_lark_event(
+                event_id,
+            )
             # 根据 type 处理不同类型事件
             type = obj["header"]["event_type"]
             if "im.message.receive_v1" == type:  # 事件回调

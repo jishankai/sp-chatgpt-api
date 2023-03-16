@@ -23,7 +23,7 @@ class Database:
         else:
             return False
 
-    def add_new_event(
+    def add_new_lark_event(
         self,
         event_id: int,
     ):
