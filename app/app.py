@@ -23,7 +23,8 @@ from flask_cors import CORS
 
 ALLOWED_ORIGINS = [
     'https://feat-chat.front.signalplus.net',
-    'https://t.signalplus.com/',
+    'https://t.signalplus.com',
+    'https://fi.signalplus.com',
     'http://localhost:8000'
 ]
 app = Flask(__name__)
@@ -38,33 +39,38 @@ async def handle_lark_request():
     # 解析请求 body
     obj = request.json
 
-    # 校验 verification token 是否匹配，token 不匹配说明该回调并非来自开发平台
-    token = obj.get("token", "")
-    if token != config.lark_app_verification_token:
-        logger.error(f"verification token not match, token = {token}")
+    schema = obj.get("schema", "")
+    if schema == "2.0":
+        token = obj["header"]["token"]
+        if token != config.lark_app_verification_token:
+            logger.error(f"verification token not match, token = {token}")
+            return jsonify({}), 200
+
+        # 根据 type 处理不同类型事件
+        type = obj["header"]["event_type"]
+        if "im.message.receive_v1" == type:  # 事件回调
+            # 获取事件内容和类型，并进行相应处理，此处只关注给机器人推送的消息事件
+            event = obj.get("event")
+            await handle_message(event)
         return jsonify({}), 200
 
-    # 根据 type 处理不同类型事件
-    type = obj.get("type", "")
-    if "url_verification" == type:  # 验证请求 URL 是否有效
-        return jsonify({"challenge": obj.get("challenge", "")}), 200
-    elif "event_callback" == type:  # 事件回调
-        # 获取事件内容和类型，并进行相应处理，此处只关注给机器人推送的消息事件
-        event = obj.get("event")
-        if event.get("type", "") == "message":
-            await handle_message(event)
-    return jsonify({}), 200
+    else:
+        # 校验 verification token 是否匹配，token 不匹配说明该回调并非来自开发平台
+        token = obj.get("token", "")
+        if token != config.lark_app_verification_token:
+            logger.error(f"verification token not match, token = {token}")
+            return jsonify({}), 200
 
 async def handle_message(event):
     # 此处只处理 text 类型消息，其他类型消息忽略
-    msg_type = event.get("msg_type", "")
+    msg_type = event["message"]["msg_type"]
     if msg_type != "text":
         logger.error("unknown msg_type =", msg_type)
         return
 
     # 调用 OpenAI API 生成回复
-    prompt = event.get("text", "")
-    open_id = event.get("open_id")
+    prompt = event["message"]["content"]["text"]
+    open_id = event["sender"]["sender_id"]["open_id"]
     response = await generate_chatgpt_response(open_id, prompt)
 
     # 调用发消息 API 发送回复消息
@@ -108,11 +114,11 @@ async def send_message(event, text):
         "Authorization": "Bearer " + token
     }
 
-    if "@ChatGPT" in event["text"]:
+    if "@" in event["message"]["content"]["text"] and event["message"]["mentions"][0]["name"]=="ChatGPT":
         # This message is an @ message
-        chat_id = event.get("open_chat_id")
-        message_id = event.get("open_message_id")
-        sender_id = event.get("open_id")
+        chat_id = event["message"]["chat_id"]
+        message_id = event["message"]["message_id"]
+        sender_id = event["sender"]["sender_id"]["open_id"]
         req_body = {
             "chat_id": chat_id,
             "msg_type": "text",
@@ -123,7 +129,7 @@ async def send_message(event, text):
             "user_id": sender_id
         }
     else:
-        open_id = event.get("open_id")
+        open_id = event["sender"]["sender_id"]["open_id"]
         req_body = {
             "open_id": open_id,
             "msg_type": "text",
