@@ -76,18 +76,18 @@ async def handle_message(event):
         at_key = event["message"]["mentions"][0]["key"]
         prompt = prompt.replace(at_key, "")
 
-    response = await generate_chatgpt_response(open_id, prompt)
+    response = await generate_chatgpt_response(open_id, prompt, "signalplus")
 
     # 调用发消息 API 发送回复消息
     await send_message(event, response)
 
-async def generate_chatgpt_response(user_id, message):
-    await register_user_if_not_exists(user_id)
+async def generate_chatgpt_response(user_id, message, chat_mode):
+    await register_user_if_not_exists(user_id, chat_mode)
     if (datetime.now() - db.get_user_attribute(user_id, "last_interaction")).seconds > config.new_dialog_timeout and len(db.get_dialog_messages(user_id)) > 0:
         db.start_new_dialog(user_id)
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
     try:
-        chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api, chat_mode="signalplus")
+        chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api, chat_mode=chat_mode)
         answer, n_used_tokens, n_first_dialog_messages_removed = await chatgpt_instance.send_message(
             message,
             dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
@@ -176,7 +176,7 @@ async def get_tenant_access_token():
 @app.route('/api/messages', methods=['GET'])
 async def get_messages():
     user_id = request.args.get('user_id')
-    await register_user_if_not_exists(user_id)
+    await register_user_if_not_exists(user_id, "assistant")
     chatgpt_instance = chatgpt.ChatGPT(use_chatgpt_api=config.use_chatgpt_api)
     messages = chatgpt_instance.generate_messages_from_db(
         dialog_messages=db.get_dialog_messages(user_id, dialog_id=None),
@@ -189,14 +189,15 @@ async def post_message():
     request_data = request.json
     user_id = request_data.get('user_id')
     message = request_data.get('message')
-    answer = await generate_chatgpt_response(user_id, message)
+    answer = await generate_chatgpt_response(user_id, message, "assistant")
 
     return jsonify(succ=True, code=0, message="", value=answer)
 
-async def register_user_if_not_exists(user_id):
+async def register_user_if_not_exists(user_id, chat_mode):
     if not db.check_if_user_exists(user_id):
         db.add_new_user(
             user_id,
+            chat_mode,
         )
         db.start_new_dialog(user_id)
 

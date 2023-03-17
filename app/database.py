@@ -42,6 +42,7 @@ class Database:
     def add_new_user(
         self,
         user_id: int,
+        current_chat_mode: str,
     ):
         user_dict = {
             "_id": user_id,
@@ -49,7 +50,7 @@ class Database:
             "last_interaction": datetime.now(),
             "first_seen": datetime.now(),
             "current_dialog_id": None,
-            "current_chat_mode": "assistant",
+            "current_chat_mode": current_chat_mode,
             "n_used_tokens": 0
         }
 
