@@ -11,6 +11,10 @@ with open(config_dir / "config.yml", 'r') as f:
 # load .env config
 config_env = dotenv.dotenv_values(config_dir / "config.env")
 
+# load filtered words
+with open(config_dir / "filtered.txt", 'r') as f:
+    filtered_words = f.read().splitlines()
+
 # config parameters
 telegram_token = config_yaml["telegram_token"]
 openai_api_key = config_yaml["openai_api_key"]
@@ -23,3 +27,4 @@ bot_id = config_yaml["bot_id"]
 lark_app_id = config_yaml["lark_app_id"]
 lark_app_secret = config_yaml["lark_app_secret"]
 lark_app_verification_token = config_yaml["lark_app_verification_token"]
+filtered_pattern = '|'.join(filtered_words)

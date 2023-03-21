@@ -6,6 +6,7 @@ import html
 import json
 from datetime import datetime
 import requests
+import re
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import config
@@ -189,7 +190,10 @@ async def post_message():
     request_data = request.json
     user_id = request_data.get('user_id')
     message = request_data.get('message')
-    answer = await generate_chatgpt_response(user_id, message, "assistant")
+    if re.search(config.filtered_pattern, message):
+        answer = "我是一个衍生品专家，建议不要跟我讨论政治问题。但是您有任何关于期权交易的问题，我会很乐意为您效劳。"
+    else:
+        answer = await generate_chatgpt_response(user_id, message, "assistant")
 
     return jsonify(succ=True, code=0, message="", value=answer)
 
