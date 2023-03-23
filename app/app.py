@@ -80,7 +80,11 @@ async def handle_message(event):
     response = await generate_chatgpt_response(open_id, prompt, "signalplus")
 
     # 调用发消息 API 发送回复消息
-    await send_message(event, response)
+    try:
+        await send_message(event, response)
+    except Exception as e:
+        logger.error(e)
+        return
 
 async def generate_chatgpt_response(user_id, message, chat_mode):
     await register_user_if_not_exists(user_id, chat_mode)
