@@ -66,7 +66,7 @@ async def handle_message(event):
     # 此处只处理 text 类型消息，其他类型消息忽略
     msg_type = event["message"]["message_type"]
     if msg_type != "text":
-        logger.error("unknown msg_type =", msg_type)
+        logger.error(f"unknown msg_type = {msg_type}")
         return
 
     # 调用 OpenAI API 生成回复
