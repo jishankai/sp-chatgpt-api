@@ -26,7 +26,8 @@ ALLOWED_ORIGINS = [
     'https://feat-chat.front.signalplus.net',
     'https://t.signalplus.com',
     'https://fi.signalplus.com',
-    'http://localhost:8000'
+    'http://localhost:8000',
+    "https://t-pre.signalplus.com"
 ]
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
